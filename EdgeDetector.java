@@ -19,12 +19,43 @@ public class EdgeDetector {
         System.out.println("Starting Edge Detector program");
         System.out.print("Source image: ");
         BufferedImage image1 = getBWimage(getImage());
-        WritableRaster raster1 = image1.getRaster();
         display(image1, "Source image");
 
-        BufferedImage image2 = addSaltPepperNoise(image1, 0.2);
+        BufferedImage image2 = getGradientMap(image1);
+        display(image2, "Gradient Map");
+
+        BufferedImage image3 = addSaltPepperNoise(image1, 0.2);
         display(image2, "Salt & Pepper Noise added");
+
+        System.out.println("End of Edge Detector program");
         return;
+    }
+
+    private BufferedImage getGradientMap(BufferedImage image) {
+        // Sobel kernels
+        int[][] hx = {{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
+        int[][] hy = {{-1, -2, -1}, {0, 0, 0}, {1, 2, 1}};
+
+        BufferedImage gradientMap = new BufferedImage(image.getWidth()-2, image.getHeight()-2, BufferedImage.TYPE_BYTE_GRAY);
+
+        for (int i = 1; i < image.getWidth()-2; i++) {
+            for (int j = 1; j < image.getHeight()-2; j++) {
+                // Single pixel operation
+                int sum = 0;
+                for (int k = 0; k < 2; k++) {
+                    for (int l = 0; k < 2; l++) {
+                        System.out.println("OK1: " + ", k: " + k + " l: " + l + " hx[k][l]: " + hx[k][l]);
+                        sum = sum + hx[k][l];
+                        //* image.getData().getSample(i-k+1, j-l+2, 0);
+                    }
+                }
+                if (sum > 150)
+                    gradientMap.setRGB(i, j, Color.WHITE.getRGB());
+                else
+                    gradientMap.setRGB(i, j, Color.BLACK.getRGB());
+            }
+        }
+        return gradientMap;
     }
 
     private BufferedImage addSaltPepperNoise(BufferedImage image, double percentage) {
