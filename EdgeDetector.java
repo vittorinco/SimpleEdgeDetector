@@ -22,10 +22,17 @@ public class EdgeDetector {
         display(image1, "Source image");
 
         BufferedImage image2 = getGradientMap(image1);
-        display(image2, "Gradient Map");
+        display(image2, "Gradient Map (w/o noise)");
+        export(image2, "GradientMap_NoNoise.png");
 
+        // Repeat with added noise
         BufferedImage image3 = addSaltPepperNoise(image1, 0.2);
-        display(image2, "Salt & Pepper Noise added");
+        display(image3, "Salt & Pepper Noise added");
+        export(image3, "SaltPepperNoiseAdded.png");
+
+        BufferedImage image4 = getGradientMap(image3);
+        display(image4, "Gradient Map (w/ noise)");
+        export(image4, "GradientMap_WithNoise.png");
 
         System.out.println("End of Edge Detector program");
         return;
@@ -38,18 +45,22 @@ public class EdgeDetector {
 
         BufferedImage gradientMap = new BufferedImage(image.getWidth()-2, image.getHeight()-2, BufferedImage.TYPE_BYTE_GRAY);
 
+        System.out.println("Starting convolution (this may take several minutes)...");
+
+        // iterate from 0 to 97 (in 100 image)
         for (int i = 1; i < image.getWidth()-2; i++) {
             for (int j = 1; j < image.getHeight()-2; j++) {
                 // Single pixel operation
-                int sum = 0;
+                int sumx = 0; // 255
+                int sumy = 0;
                 for (int k = 0; k < 2; k++) {
-                    for (int l = 0; k < 2; l++) {
-                        System.out.println("OK1: " + ", k: " + k + " l: " + l + " hx[k][l]: " + hx[k][l]);
-                        sum = sum + hx[k][l];
-                        //* image.getData().getSample(i-k+1, j-l+2, 0);
+                    for (int l = 0; l < 2; l++) {
+                        sumx = sumx + hx[k][l] * image.getData().getSample(i-k, j-l, 0);
+                        sumy = sumy + hy[k][l] * image.getData().getSample(i-k, j-l, 0);
                     }
                 }
-                if (sum > 150)
+                int magnitude = Math.abs(sumx) + Math.abs(sumy);
+                if (magnitude > 750) // or use arbitrary value, like 150
                     gradientMap.setRGB(i, j, Color.WHITE.getRGB());
                 else
                     gradientMap.setRGB(i, j, Color.BLACK.getRGB());
@@ -59,13 +70,12 @@ public class EdgeDetector {
     }
 
     private BufferedImage addSaltPepperNoise(BufferedImage image, double percentage) {
+        System.out.println("Adding Salt and Pepper noise");
         int resolution = image.getWidth()*image.getHeight();
         int noisyPixels = (int)Math.floor(resolution*percentage);
         System.out.println("Resolution: " + resolution + ", noisy pixels: " + noisyPixels);
-        System.out.println("SAMPLE : " + image.getData().getSample(0,0,0));
 
         Random rand = new Random();
-        System.out.println("COLOR RED: "+ Color.RED.getRGB());
         for (int i = 0; i < noisyPixels-1; i++) {
                 int blackOrWhite = rand.nextInt(2);
                 if (blackOrWhite == 0)
@@ -86,6 +96,7 @@ public class EdgeDetector {
             System.out.println("Successfully opened image (size: " + image.getWidth() + "x" + image.getHeight() + ")");
         } catch (Exception e){
             System.out.println("Error reading image");
+            System.exit(1);
         }
         return image;
     }
@@ -105,6 +116,15 @@ public class EdgeDetector {
         f.pack();
         f.setLocationRelativeTo(null);
         f.setVisible(true);
+    }
+
+    private void export(BufferedImage image, String filename) {
+        try {
+            File outputfile = new File(filename);
+            ImageIO.write(image, "png", outputfile);
+        } catch (IOException e) {
+            System.out.println("Error exporting " + filename);
+        }
     }
 
     public static void main(String[] argv) {
